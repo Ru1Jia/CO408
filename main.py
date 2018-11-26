@@ -15,23 +15,27 @@ def alice(filename):
   socket = util.ClientSocket()
   util.log(f'Bob: Listening ...')
 
-  # step2: to send the one chosen by bob
-  print("*")
-  while True:
-    count = 0;
-    value = socket.receive()
-    print(value)
-    print("**")
+  # step1: send c to bob and waiting for h_0
+  c = ot.generate_random_int()
+  socket.send(c)
+  print("Successfully! alice sends c to bob, c is: ", c)
 
-    with open(filename) as json_file:
-      json_circuits = json.load(json_file)
 
-    for json_circuit in json_circuits['circuits']:
-        print("alice")
-        # << removed >>
-    count = count+1
-    if count == 10:
-      break
+  # step3: receive h_0 from bob
+  #           send c_1, e_0, e_1 to bob
+  h_0 = socket.receive()
+  print("Successfully! alice receives h_0 from bob, h_0 is: ", h_0)
+  socket.send(ot.send_parameters(c, h_0, m_0, m_1))
+  print("Successfully! alice sends parameters:c, h_0, m_0, m_1", c, h_0, m_0, m_1)
+
+  with open(filename) as json_file:
+    json_circuits = json.load(json_file)
+
+  for json_circuit in json_circuits['circuits']:
+    print("alice")
+
+
+
 # Bob is the circuit evaluator (server) ____________________________________
 
 def bob():
@@ -39,16 +43,31 @@ def bob():
   util.log(f'Bob: Listening ...')
 
   while True:
-    # step1: bob choose one public key from alice
-    ot.bob_select_public_key(socket)
 
-    # step2: send it to alice
+    # step2: bob receives c from alice
+    #          generates x from (Z/qZ)
+    #            chooses one public key from alice
+    #             and waiting for c_1, e_0, e_1
+    c = socket.receive()
+    x = ot.generate_random_int()
+    print("Successfully! bob receives c from alice, c is: ", c)
+    print('please choose one of two public keys: (0: the first one; 1: the second one)')
+    b = int(input(''))
+    h_0 = ot.generate_h_b(x, c, b)
+
+    #socket.send(h_0)
+    #print("Successfully! bob sends h_0 to alice, h_0 is: ", h_0)
+
+    # step4: bob receives c_1, e_0, e_1 from alice
+    #          calculate m_b
+    parameters = socket.receive()
+    c_1 = parameters[0]
+    e_0 = parameters[1]
+    e_1 = parameters[2]
+    print("Successfully! bob receives c_1, e_0, e_1 from alice, ", c_1, e_0, e_1)
+    m_b = ot.calculate_m_b(x, c_1, e_0, e_1, b)
 
 
-    #message = socket.receive()
-    #print("Recieved: ", message)
-    socket.send("nmd")
-    # << removed >>
 
 # local test of circuit generation and evaluation, no transfers_____________
 
