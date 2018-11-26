@@ -13,18 +13,25 @@ import yao	# Circuit
 
 def alice(filename):
   socket = util.ClientSocket()
+  util.log(f'Bob: Listening ...')
 
   # step2: to send the one chosen by bob
-  value = socket.receive()
-  print(value)
+  print("*")
+  while True:
+    count = 0;
+    value = socket.receive()
+    print(value)
+    print("**")
 
-  with open(filename) as json_file:
-    json_circuits = json.load(json_file)
+    with open(filename) as json_file:
+      json_circuits = json.load(json_file)
 
-  for json_circuit in json_circuits['circuits']:
-      print("alice")
-      # << removed >>
-
+    for json_circuit in json_circuits['circuits']:
+        print("alice")
+        # << removed >>
+    count = count+1
+    if count == 10:
+      break
 # Bob is the circuit evaluator (server) ____________________________________
 
 def bob():
@@ -38,9 +45,8 @@ def bob():
     # step2: send it to alice
 
 
-
-    message = socket.receive()
-    print("Recieved: ", message)
+    #message = socket.receive()
+    #print("Recieved: ", message)
     socket.send("nmd")
     # << removed >>
 
