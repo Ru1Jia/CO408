@@ -3,39 +3,42 @@
 # naranker dulay, dept of computing, imperial college, october 2018
 
 import json	# load
-import sys	# argv
 
+import sys	# argv
 import ot	# alice, bob
 import util	# ClientSocket, log, ServerSocket
 import yao	# Circuit
 
 # Alice is the circuit generator (client) __________________________________
 
-
-
 def alice(filename):
   socket = util.ClientSocket()
+
+  # step2: to send the one chosen by bob
+  value = socket.receive()
+  print(value)
 
   with open(filename) as json_file:
     json_circuits = json.load(json_file)
 
-
   for json_circuit in json_circuits['circuits']:
+      print("alice")
       # << removed >>
-
-      circuit_and = yao.circuits()
-      circuit_and.name = json_circuit['name']
-      circuit_and.alice = json_circuit['alice']
-      circuit_and.out = json_circuit['out']
-
-      print(json_circuit)
 
 # Bob is the circuit evaluator (server) ____________________________________
 
 def bob():
   socket = util.ServerSocket()
   util.log(f'Bob: Listening ...')
+
   while True:
+    # step1: bob choose one public key from alice
+    ot.bob_select_public_key(socket)
+
+    # step2: send it to alice
+
+
+
     message = socket.receive()
     print("Recieved: ", message)
     socket.send("nmd")
