@@ -1,9 +1,7 @@
-
 # yao garbled circuit evaluation v1. simple version based on smart
 # naranker dulay, dept of computing, imperial college, october 2018
+
 import util
-import numpy as np
-import sys
 
 OBLIVIOUS_TRANSFERS = True
 
@@ -11,43 +9,55 @@ OBLIVIOUS_TRANSFERS = True
 if OBLIVIOUS_TRANSFERS: # __________________________________________________
     primeGroup = util.PrimeGroup()
 
-    # alice's two public keys
+    # alice generates c from G, bob generates x from (Z/qZ)
+    def generate_random_int():  return primeGroup.rand_int()
 
-    # Two public keys from alice to bob who can choose one of these two
-    # two keys array
-    TwoKeys_c = np.zeros([7,2])
-    for i in range(7):
-        for j in range(2):
-            TwoKeys_c[i][j] = primeGroup.gen_pow(primeGroup.rand_int())
+    # bob sends h_b to alice
+    def generate_h_b(x, c_from_G, b_chosen_by_bob):
+        # x is generated from (Z/qZ) in main
+        # bob generates a pair of public keys: h_b and h_1-b
+        h_b_0 = primeGroup.gen_pow(x)
+        h_b_1 = primeGroup.mul(c_from_G, primeGroup.inv(h_b_0))
+        # send the h_b
+        h_b = []
+        if b_chosen_by_bob == 0:    h_b.append(h_b_0)
+        if b_chosen_by_bob == 1:    h_b.append(h_b_1)
+        else:
+            print("ERROR: bob generates public keys !")
 
-    # bob' choice
-    def bob_select_public_key(socket):
-        # step1: bob choose one public key from alice
-        print('choose one of two public keys: (0: the first one; 1: the second one)')
-        while True:
-            value = int(input(''))
-            if value == 1 or value == 0:
-                print(value)
-                break
-            else:
-                print(value)
-                print("please select 0 or 1.")
-        print(value)
-        socket.send(value)
+        return h_b
 
-    # step2: to send the one chosen by bob
-    def send_public_key_to_bob(value, socket):
-        pass
+    # alice sends c, e0, e1 to bob
+    def send_parameters(c, h0, m_0, m_1):
+        # generate h1 by c/h0
+        h1 = primeGroup.mul(c, primeGroup.inv(h0))
+        # alice generates k from (Z/qZ)
+        k = primeGroup.rand_int()
+        # alice generate a public key by g^k
+        c_1 = primeGroup.gen_pow(k)
+        # Calculate e_0 and e_1
+        e_0 = util.xor_bytes(m_0, util.ot_hash(primeGroup.pow(h0, k), len(m_0)))
+        e_1 = util.xor_bytes(m_1, util.ot_hash(primeGroup.pow(h1, k), len(m_1)))
+        #
+        parameters_AliceToBob = []
+        parameters_AliceToBob.append(c_1)
+        parameters_AliceToBob.append(e_0)
+        parameters_AliceToBob.append(e_1)
+
+        return parameters_AliceToBob
 
 
-  # bellare-micali OT with naor and pinkas optimisations, see smart p423
+    def calculate_m_b(x, c_1, e_0, e_1, b_chosen_by_bob):
+        # the same x with generate_h_b
+        # calculate m_b and m_1-b
+        m_b = util.xor_bytes(e_0, util.ot_hash(primeGroup.pow(c_1, x), len(e_0)))
+        m_1_b = util.xor_bytes(e_1, util.ot_hash(primeGroup.pow(c_1, x), len(e_1)))
 
-  # << removed >>
+        if b_chosen_by_bob == 0:    return m_b
+        if b_chosen_by_bob == 1:    return m_1_b
+        else:
+            print("ERROR: calculate m_b !")
 
+# non oblivious transfers, not even a secure channel is used, for testing
 else: # ____________________________________________________________________
-    print("bob")
-  # non oblivious transfers, not even a secure channel is used, for testing
-
-# __________________________________________________________________________
-
-
+    print("just for testing.")
